@@ -18,7 +18,7 @@ contract PolymerTransceiver is IPolymerTransceiver, PolymerTransceiverState {
     string public constant POLYMER_TRANSCEIVER_VERSION = "1.0.0";
 
     /// @dev Event signature for NTT message emissions
-    bytes32 constant NTT_MESSAGE_EVENT_SIGNATURE = keccak256("NttMessage(bytes32,bytes32,bytes)");
+    bytes32 constant NTT_MESSAGE_EVENT_SIGNATURE = keccak256("NttMessage(bytes32,bytes,uint256,bytes32)");
 
     constructor(
         address _nttManager,
@@ -82,8 +82,10 @@ contract PolymerTransceiver is IPolymerTransceiver, PolymerTransceiverState {
         // Decode the message data from unindexed data
         (
             bytes32 recipientNttManagerAddress,
-            bytes memory encodedTransceiverPayload
-        ) = abi.decode(unindexedData, (bytes32, bytes));
+            bytes memory encodedTransceiverPayload,
+            uint256 deliveryPayment,
+            bytes32 refundAddress
+        ) = abi.decode(unindexedData, (bytes32, bytes, uint256, bytes32));
 
         // Parse the transceiver message
         TransceiverStructs.TransceiverMessage memory parsedTransceiverMessage;
@@ -172,22 +174,11 @@ contract PolymerTransceiver is IPolymerTransceiver, PolymerTransceiverState {
             new bytes(0)
         );
 
-        // Emit event that Polymer will capture and relay
-        emit NttMessage(recipientNttManagerAddress, encodedTransceiverPayload);
+        // Emit event that Polymer will capture and relay.
+        emit NttMessage(recipientNttManagerAddress, encodedTransceiverPayload, deliveryPayment, refundAddress);
         
+        // Emit event for consistent accounting. 
         emit SendTransceiverMessage(recipientChain, transceiverMessage);
-
-        // Handle refunds if there's excess payment
-        if (deliveryPayment > 0 && refundAddress != bytes32(0)) {
-            address refundRecipient = fromWormholeFormat(refundAddress);
-            uint256 refundAmount = address(this).balance;
-            if (refundAmount > 0) {
-                (bool success, ) = refundRecipient.call{value: refundAmount}("");
-                if (!success) {
-                    revert RefundFailed(refundRecipient, refundAmount);
-                }
-            }
-        }
     }
 
     // ==================== Internal Helpers ================================================
@@ -216,7 +207,7 @@ contract PolymerTransceiver is IPolymerTransceiver, PolymerTransceiverState {
     /// @dev Convert Polymer chain ID to Wormhole chain ID format
     /// @notice This mapping should be configured based on actual chain IDs
     function _polymerToWormholeChainId(uint256 polymerChainId) internal pure returns (uint16) {
-        // Example mappings - these should be adjusted based on actual chain IDs
+        // TODO: Make these chain mappings configurable or handle the transformation upstream. 
         if (polymerChainId == 1) return 2; // Ethereum
         if (polymerChainId == 137) return 5; // Polygon
         if (polymerChainId == 10) return 24; // Optimism

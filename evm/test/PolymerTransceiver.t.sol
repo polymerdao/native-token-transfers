@@ -198,7 +198,7 @@ contract PolymerTransceiverTest is Test {
         
         // Create topics (event signature)
         bytes memory topics = abi.encodePacked(
-            keccak256("NttMessage(bytes32,bytes)")
+            keccak256("NttMessage(bytes32,bytes,uint256,bytes32)")
         );
         
         // Create sample NTT message
@@ -222,7 +222,9 @@ contract PolymerTransceiverTest is Test {
         
         bytes memory unindexedData = abi.encode(
             toWormholeFormat(address(nttManager)),
-            encodedPayload
+            encodedPayload,
+            uint256(0.01 ether), // deliveryPayment
+            toWormholeFormat(USER) // refundAddress
         );
         
         // Set up the mock proof
@@ -270,12 +272,14 @@ contract PolymerTransceiverTest is Test {
         address invalidSourceContract = address(0x999); // Not registered as peer
         
         bytes memory topics = abi.encodePacked(
-            keccak256("NttMessage(bytes32,bytes)")
+            keccak256("NttMessage(bytes32,bytes,uint256,bytes32)")
         );
         
         bytes memory unindexedData = abi.encode(
             toWormholeFormat(address(nttManager)),
-            new bytes(0)
+            new bytes(0),
+            uint256(0), // deliveryPayment
+            bytes32(0) // refundAddress
         );
         
         mockProver.setValidProof(

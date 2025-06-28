@@ -13,7 +13,14 @@ interface IPolymerTransceiver is ITransceiver {
     /// @notice Emitted when sending an NTT message via Polymer
     /// @param recipientNttManagerAddress The recipient NTT manager address
     /// @param encodedPayload The encoded transceiver payload
-    event NttMessage(bytes32 indexed recipientNttManagerAddress, bytes encodedPayload);
+    /// @param deliveryPayment The payment amount for delivery
+    /// @param refundAddress The address to refund excess payment to
+    event NttMessage(
+        bytes32 indexed recipientNttManagerAddress, 
+        bytes encodedPayload,
+        uint256 deliveryPayment,
+        bytes32 refundAddress
+    );
 
     /// @notice Emitted when a message is sent via the transceiver
     /// @param recipientChain The chain ID of the recipient
